@@ -1,0 +1,41 @@
+{
+  "name": "catts-sdk",
+  "version": "0.0.1",
+  "description": "",
+  "author": "Kristofer Lund <kristofer@kristoferlund.se>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/c-atts"
+  },
+  "bugs": "https://github.com/c-atts",
+  "homepage": "https://github.com/c-atts",
+  "keywords": [
+    "ethereum",
+    "attestations",
+    "eas",
+    "dfinity",
+    "ic",
+    "internet computer",
+    "react",
+    "tailwindcss",
+    "typescript",
+    "vite"
+  ],
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "run": "npx ts-node src/index.ts"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@ethereum-attestation-service/eas-sdk": "^2.3.0",
+    "commander": "^12.1.0",
+    "dotenv": "^16.4.5",
+    "ethers": "^6.13.1",
+    "node": "^20.15.0",
+    "node-fetch": "^3.3.2",
+    "quickjs-emscripten": "^0.29.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.5.2",
+    "zod": "^3.23.8"
+  }
+}
