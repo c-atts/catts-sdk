@@ -114,7 +114,7 @@ export async function fetchQuery(query: Query) {
  * @param processor The processor javascript code to be executed.
  * @param queryResults An array of query results in JSON format.
  *
- * @returns The result of the processor script in JSON format. On success, the output should  match outputSchema specified in the recipe.
+ * @returns The raw result of the processor script as a string.
  */
 export async function runProcessor({
   processor,
@@ -122,7 +122,7 @@ export async function runProcessor({
 }: {
   processor: string;
   queryResults: any;
-}): Promise<SchemaItem[]> {
+}): Promise<string> {
   const QuickJS = await getQuickJS();
   const vm = QuickJS.newContext();
 
@@ -148,30 +148,48 @@ export async function runProcessor({
 
     const value = vm.dump(result.value);
     result.value.dispose();
-
-    const json = JSON.parse(value);
-
-    if (!Array.isArray(json)) {
-      throw new Error("Processor result must be an array");
-    }
-
-    if (json.length === 0) {
-      throw new Error("Processor returned an empty array");
-    }
-
-    let schemaItems: SchemaItem[];
-    try {
-      schemaItems = json.map((item: any) => SchemaItem.parse(item));
-    } catch (error) {
-      throw new Error("Invalid processor result");
-    }
-
-    return schemaItems;
+    return value;
   } catch (error) {
     throw error;
   } finally {
     vm.dispose();
   }
+}
+
+/**
+ * Validates that the processor result matches the output schema specified in the recipe.
+ *
+ * @param processorResult The raw result of the processor script as a string.
+ *
+ * @returns The result of the processor script in JSON format. On success, the output should  match outputSchema specified in the recipe.
+ */
+export async function validateProcessorResult({
+  processorResult,
+}: {
+  processorResult: string;
+}): Promise<SchemaItem[]> {
+  if (typeof processorResult !== "string") {
+    throw new Error("Processor result must be a string");
+  }
+
+  const json = JSON.parse(processorResult);
+
+  if (!Array.isArray(json)) {
+    throw new Error("Processor result must be an array");
+  }
+
+  if (json.length === 0) {
+    throw new Error("Processor returned an empty array");
+  }
+
+  let schemaItems: SchemaItem[];
+  try {
+    schemaItems = json.map((item: any) => SchemaItem.parse(item));
+  } catch (error) {
+    throw new Error("Invalid processor result");
+  }
+
+  return schemaItems;
 }
 
 /**
