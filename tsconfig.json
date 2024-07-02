@@ -1,12 +1,14 @@
 {
   "compilerOptions": {
-    "outDir": "./build",
     "allowJs": true,
     "target": "es2022",
     "module": "CommonJS",
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "strict": true
+    "strict": true,
+    "outDir": "dist",
+    "declaration": true,
+    "declarationDir": "dist"
   },
-  "include": ["recipes/**/*", "lib.ts", "catts.ts"]
+  "include": ["src/**/*"]
 }

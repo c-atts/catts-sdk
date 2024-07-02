@@ -1,4 +1,7 @@
-import { SchemaEncoder } from "@ethereum-attestation-service/eas-sdk";
+import {
+  SchemaEncoder,
+  SchemaItem,
+} from "@ethereum-attestation-service/eas-sdk";
 import { getQuickJS } from "quickjs-emscripten";
 import { solidityPackedKeccak256 } from "ethers";
 import { z } from "zod";
@@ -65,8 +68,6 @@ const SchemaItem = z.object({
   type: z.string(),
   value: SchemaValue,
 });
-
-export type SchemaItem = z.infer<typeof SchemaItem>;
 
 function processVariables(variables: QueryVariables): QueryVariables {
   const userEthAddress = process.env.USER_ETH_ADDRESS;

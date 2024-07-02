@@ -1,7 +1,7 @@
 {
   "name": "catts-sdk",
   "version": "0.0.1",
-  "description": "",
+  "description": "Facilitates the local development of C-ATTS recipes.",
   "author": "Kristofer Lund <kristofer@kristoferlund.se>",
   "repository": {
     "type": "git",
@@ -15,17 +15,18 @@
     "eas",
     "dfinity",
     "ic",
-    "internet computer",
-    "react",
-    "tailwindcss",
-    "typescript",
-    "vite"
+    "internet computer"
   ],
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "run": "npx ts-node src/index.ts"
-  },
   "license": "MIT",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "catts": "dist/catts.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build"
+  },
   "dependencies": {
     "@ethereum-attestation-service/eas-sdk": "^2.3.0",
     "commander": "^12.1.0",
@@ -37,5 +38,11 @@
     "ts-node": "^10.9.2",
     "typescript": "^5.5.2",
     "zod": "^3.23.8"
-  }
+  },
+  "files": [
+    "dist",
+    "src",
+    "README.md",
+    "LICENSE"
+  ]
 }
