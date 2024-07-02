@@ -7,6 +7,12 @@ This SDK facilitates the local development of C–ATTS recipes. It provides a se
 
 For some examples of recipes, see the [catts-recipes](https://github.com/c-atts/catts-recipes) repository.
 
+## What is C–ATTS?
+
+C–ATTS, or Composite Attestations, is a new type of attestation that combines data from multiple sources to form a unified and verifiable credential.
+
+To learn more, see the [C–ATTS website](https://catts.run).
+
 ## Installation
 
 Install the package globally to be able to use the `catts` command-line tool.
