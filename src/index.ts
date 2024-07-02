@@ -7,14 +7,6 @@ import { solidityPackedKeccak256 } from "ethers";
 import { z } from "zod";
 
 /**
- *  Returns the input GraphQL query as-is. Placeholder for further GraphQL processing if needed.
- * The use of "graphql('...')" helps editors and IDEs to correctly highlight the query.
- */
-export function graphql(query: string) {
-  return query;
-}
-
-/**
  * Defines the shape of query variables to be used in GraphQL queries.
  */
 export type QueryVariables = {
