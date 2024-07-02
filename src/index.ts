@@ -61,20 +61,22 @@ const SchemaItem = z.object({
   value: SchemaValue,
 });
 
-function processVariables(variables: QueryVariables): QueryVariables {
-  const userEthAddress = process.env.USER_ETH_ADDRESS;
+function substitutePlaceholders(variables: QueryVariables): QueryVariables {
+  const placeholders: { [key: string]: string } = {
+    "{user_eth_address}": process.env.USER_ETH_ADDRESS || "",
+  };
 
-  if (!userEthAddress) {
-    throw new Error("USER_ETH_ADDRESS is not set");
-  }
-
-  // Replaces placeholder tokens in the variables with actual userEthAddress
-  function replaceUserEthAddress(obj: QueryVariables): QueryVariables {
+  function replacePlaceholders(obj: QueryVariables): QueryVariables {
     return Object.entries(obj).reduce<QueryVariables>((acc, [key, value]) => {
-      if (typeof value === "string" && value.includes("{user_eth_address}")) {
-        acc[key] = value.replace("{user_eth_address}", userEthAddress!);
+      if (typeof value === "string") {
+        acc[key] = Object.entries(placeholders).reduce(
+          (str, [placeholder, actualValue]) => {
+            return str.replace(new RegExp(placeholder, "g"), actualValue);
+          },
+          value
+        );
       } else if (typeof value === "object" && value !== null) {
-        acc[key] = replaceUserEthAddress(value);
+        acc[key] = replacePlaceholders(value);
       } else {
         acc[key] = value;
       }
@@ -82,7 +84,7 @@ function processVariables(variables: QueryVariables): QueryVariables {
     }, {});
   }
 
-  return replaceUserEthAddress(variables);
+  return replacePlaceholders(variables);
 }
 
 /**
@@ -92,7 +94,7 @@ function processVariables(variables: QueryVariables): QueryVariables {
  */
 export async function fetchQuery(query: Query) {
   try {
-    const variables = processVariables(query.variables);
+    const variables = substitutePlaceholders(query.variables);
 
     const response = await fetch(query.endpoint, {
       method: "POST",
