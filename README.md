@@ -1,6 +1,9 @@
 # C–ATTS SDK
 
-This SDK facilitates the local development of C–ATTS recipes. It provides a set of functions for fetching query results, running processor scripts, and validating schema items against a recipe's schema. The SDK also includes a command-line tool for running recipes.
+This SDK facilitates the local development of C–ATTS recipes. It provides a set of functions for fetching query results, running processor scripts, and validating schema items against a recipe's schema. The SDK also provides a command-line tool for running recipes. Using the command-line tool is the recommended way to develop and test recipes.
+
+> [!NOTE]  
+> The SDK is a work in progress. Features and functionality may change without notice. C–ATTS has not yet been publicly released, so the SDK is not yet ready for general use.
 
 ## Installation
 
