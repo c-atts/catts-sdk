@@ -10,10 +10,13 @@ import {
   fetchQuery,
   getSchemaUid,
   runProcessor,
+  validateProcessorResult,
   validateSchemaItems,
 } from "./index";
 
 import { Command } from "commander";
+
+let verbose = false; // Variable to store verbose flag
 
 async function importRecipe(recipeFolder: string): Promise<Recipe> {
   const recipePath = path.join(recipeFolder, "recipe.js");
@@ -38,6 +41,9 @@ function logError(error: unknown): void {
   if (typeof error === "object" && error !== null) {
     if ("name" in error) console.log(error.name);
     if ("message" in error) console.log(error.message);
+    if (verbose && error instanceof Error && error.stack) {
+      console.error(error.stack);
+    }
   } else {
     console.error(error);
   }
@@ -87,32 +93,50 @@ async function runCommand(recipeFolder: string) {
     const recipe = await importRecipe(recipeFolder);
     console.log("\nRecipe:", recipe.name);
 
-    write("\n1/3 Running graphql queries... ");
+    write("\n1/4 Running graphql queries... ");
     const queryPromises = recipe.queries.map(fetchQuery);
     const queryResults = await Promise.all(queryPromises);
-    write("✅\n");
+    writeln("✅");
 
-    write("\n2/3 Running processor... ");
+    if (verbose) {
+      writeln("\nQuery results:");
+      writeln(JSON.stringify(queryResults, null, 2));
+    }
+
+    write("\n2/4 Running processor... ");
     const processor = await loadProcessor(recipeFolder);
-    const schemaItems = await runProcessor({
+    const processorResult = await runProcessor({
       processor,
       queryResults,
     });
-    writeln("✅\n");
+    writeln("✅");
 
-    writeln("Schema items:");
-    writeln(JSON.stringify(schemaItems, null, 2));
-    console.log("Schema:", recipe.schema);
-    console.log(
-      "Schema UID:",
-      getSchemaUid({
-        schema: recipe.schema,
-        resolver: recipe.resolver,
-        revokable: recipe.revokable,
-      })
-    );
+    if (verbose) {
+      writeln("\nProcessor result:");
+      writeln(processorResult);
+    }
 
-    write("\n3/3 Validating schema items against schema... ");
+    write("\n3/4 Validating processor result... ");
+    const schemaItems = await validateProcessorResult({
+      processorResult,
+    });
+    writeln("✅");
+
+    if (verbose) {
+      writeln("\nSchema items:");
+      writeln(JSON.stringify(schemaItems, null, 2));
+      console.log("Schema:", recipe.schema);
+      console.log(
+        "Schema UID:",
+        getSchemaUid({
+          schema: recipe.schema,
+          resolver: recipe.resolver,
+          revokable: recipe.revokable,
+        })
+      );
+    }
+
+    write("\n4/4 Validating schema items against schema... ");
     const schema = await validateSchemaItems({
       schemaItems,
       recipe,
@@ -134,9 +158,13 @@ program
   .option(
     "-e, --eth-address <address>",
     "Ethereum address to use for queries. Defaults to the value of the USER_ETH_ADDRESS environment variable."
-  );
+  )
+  .option("-v, --verbose", "Enable verbose output");
 
 program.hook("preAction", async (thisCommand) => {
+  // Set verbose flag
+  verbose = thisCommand.opts().verbose;
+
   // If -e option is set, override process.env.USER_ETH_ADDRESS
   const ethAddressOption = thisCommand.opts().ethAddress;
   if (ethAddressOption) {
