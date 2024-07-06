@@ -9,6 +9,7 @@ import {
   Recipe,
   fetchQuery,
   getSchemaUid,
+  parseRecipe,
   runProcessor,
   validateProcessorResult,
   validateSchemaItems,
@@ -27,7 +28,7 @@ async function importRecipe(recipeFolder: string): Promise<Recipe> {
 
   const absolutePath = path.resolve(recipePath);
   const recipeImport = await import(absolutePath);
-  return recipeImport.default;
+  return parseRecipe(recipeImport.default);
 }
 
 // Loads and wraps the processor script for execution in QuickJS VM.

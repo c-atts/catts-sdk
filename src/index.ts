@@ -6,37 +6,58 @@ import { getQuickJS } from "quickjs-emscripten";
 import { solidityPackedKeccak256 } from "ethers";
 import { z } from "zod";
 
+const queryVariables: z.ZodTypeAny = z.lazy(() =>
+  z.record(z.union([queryVariables, z.string(), z.number()]))
+);
+
 /**
  * Defines the shape of query variables to be used in GraphQL queries.
  */
-export type QueryVariables = {
-  [key: string]: QueryVariables | string | number;
-};
+export type QueryVariables = z.infer<typeof queryVariables>;
+
+const query = z.object({
+  endpoint: z.string(),
+  query: z.string(),
+  variables: z.record(z.unknown()),
+});
 
 /**
  * Defines the components of a GraphQL query, including endpoint and variables.
  */
-export type Query = {
-  endpoint: string;
-  query: string;
-  variables: QueryVariables;
-};
+export type Query = z.infer<typeof query>;
+
+const recipe = z.object({
+  // Min length 3
+  // Max length 50
+  // Only alphanumeric characters and hyphens
+  name: z
+    .string()
+    .min(3)
+    .max(50)
+    .refine((val) => /^[a-zA-Z0-9-]+$/.test(val), {
+      message: "Name can only contain alphanumeric characters and hyphens",
+    }),
+  // Min length 3
+  // Max length 50
+  displayName: z.string().min(3).max(50).optional(),
+  // Min length 3
+  // Max length 160
+  description: z.string().min(3).max(160).optional(),
+  // Keyword min length 3
+  // Keyword max length 50
+  keywords: z.array(z.string().min(3).max(50)).optional(),
+  queries: z.array(query),
+  schema: z.string(),
+  resolver: z.string(),
+  revokable: z.boolean(),
+});
 
 /**
  * Defines the structure of a recipe, including queries and output schema.
  */
-export type Recipe = {
-  name: string;
-  displayName?: string;
-  description?: string;
-  keywords?: string[];
-  queries: Query[];
-  schema: string;
-  resolver: string;
-  revokable: boolean;
-};
+export type Recipe = z.infer<typeof recipe>;
 
-// Define the basic types
+// Define the basic schema value types
 const schemaValueBase = z.union([
   z.string(),
   z.boolean(),
@@ -44,7 +65,7 @@ const schemaValueBase = z.union([
   z.bigint(),
 ]);
 
-// Define the more complex types
+// Define the more complex schema value types
 const schemaValueComplex = z.union([
   z.record(z.unknown()), // Record<string, unknown>
   z.array(z.record(z.unknown())), // Record<string, unknown>[]
@@ -60,6 +81,10 @@ const SchemaItem = z.object({
   type: z.string(),
   value: SchemaValue,
 });
+
+export function parseRecipe(input: unknown): Recipe {
+  return recipe.parse(input);
+}
 
 function substitutePlaceholders(variables: QueryVariables): QueryVariables {
   const placeholders: { [key: string]: string } = {
