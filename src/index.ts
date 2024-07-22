@@ -2,12 +2,11 @@ import {
   SchemaEncoder,
   SchemaItem,
 } from "@ethereum-attestation-service/eas-sdk";
-import { getQuickJS } from "quickjs-emscripten";
 import { solidityPackedKeccak256 } from "ethers";
 import { z } from "zod";
 
 const queryVariables: z.ZodTypeAny = z.lazy(() =>
-  z.record(z.union([queryVariables, z.string(), z.number()]))
+  z.record(z.union([queryVariables, z.string(), z.number()])),
 );
 
 /**
@@ -30,11 +29,12 @@ const recipe = z.object({
   // Min length 3
   // Max length 50
   // Only alphanumeric characters and hyphens
+  // Lowercase
   name: z
     .string()
     .min(3)
     .max(50)
-    .refine((val) => /^[a-zA-Z0-9-]+$/.test(val), {
+    .refine((val) => /^[a-z0-9-]+$/.test(val), {
       message: "Name can only contain alphanumeric characters and hyphens",
     }),
   // Min length 3
@@ -98,7 +98,7 @@ function substitutePlaceholders(variables: QueryVariables): QueryVariables {
           (str, [placeholder, actualValue]) => {
             return str.replace(new RegExp(placeholder, "g"), actualValue);
           },
-          value
+          value,
         );
       } else if (typeof value === "object" && value !== null) {
         acc[key] = replacePlaceholders(value);
@@ -132,54 +132,6 @@ export async function fetchQuery(query: Query) {
     return response.json();
   } catch (error) {
     return error;
-  }
-}
-
-/**
- * Runs the processor script against the query results and returns the result.
- *
- * @param processor The processor javascript code to be executed.
- * @param queryResults An array of query results in JSON format.
- *
- * @returns The raw result of the processor script as a string.
- */
-export async function runProcessor({
-  processor,
-  queryResults,
-}: {
-  processor: string;
-  queryResults: any;
-}): Promise<string> {
-  const QuickJS = await getQuickJS();
-  const vm = QuickJS.newContext();
-
-  try {
-    const queryResultRaw = vm.newString(JSON.stringify(queryResults));
-    vm.setProp(vm.global, "queryResultRaw", queryResultRaw);
-    queryResultRaw.dispose();
-
-    processor = `
-      let queryResult = JSON.parse(queryResultRaw).map((res) => res.data);
-      function process() {{
-        ${processor}
-      }}
-      process();
-    `;
-
-    const result = vm.evalCode(processor);
-    if (result.error) {
-      const error = vm.dump(result.error);
-      result.error.dispose();
-      throw error;
-    }
-
-    const value = vm.dump(result.value);
-    result.value.dispose();
-    return value;
-  } catch (error) {
-    throw error;
-  } finally {
-    vm.dispose();
   }
 }
 
@@ -247,6 +199,6 @@ export function getSchemaUid({
 }) {
   return solidityPackedKeccak256(
     ["string", "address", "bool"],
-    [schema, resolver, revokable]
+    [schema, resolver, revokable],
   );
 }
