@@ -184,16 +184,16 @@ export async function validateProcessorResult({
 }
 
 /**
- * Validates that the schema items match the schema specified in the recipe.
+ * Validates that an array of schema items matches what is expected by the schema.
  */
 export async function validateSchemaItems({
   schemaItems,
-  recipe,
+  schema,
 }: {
   schemaItems: SchemaItem[];
-  recipe: Recipe;
+  schema: string;
 }) {
-  const schemaEncoder = new SchemaEncoder(recipe.schema);
+  const schemaEncoder = new SchemaEncoder(schema);
   return schemaEncoder.encodeData(schemaItems);
 }
 
