@@ -5,16 +5,24 @@ import {
 import { solidityPackedKeccak256 } from "ethers";
 import { z } from "zod";
 
-const queryVariables: z.ZodTypeAny = z.lazy(() =>
-  z.record(z.union([queryVariables, z.string(), z.number()])),
+/**
+ * Zod schema for query variables. Defines the shape of query variables to be used
+ * in GraphQL queries.
+ */
+export const queryVariablesSchema: z.ZodTypeAny = z.lazy(() =>
+  z.record(z.union([queryVariablesSchema, z.string(), z.number()])),
 );
 
 /**
  * Defines the shape of query variables to be used in GraphQL queries.
  */
-export type QueryVariables = z.infer<typeof queryVariables>;
+export type QueryVariables = z.infer<typeof queryVariablesSchema>;
 
-const query = z.object({
+/**
+ * Zod schema for query variables. Defines the components of a GraphQL query,
+ * including endpoint and variables.
+ */
+export const querySchema = z.object({
   endpoint: z.string(),
   query: z.string(),
   variables: z.record(z.unknown()),
@@ -23,9 +31,13 @@ const query = z.object({
 /**
  * Defines the components of a GraphQL query, including endpoint and variables.
  */
-export type Query = z.infer<typeof query>;
+export type Query = z.infer<typeof querySchema>;
 
-const recipe = z.object({
+/**
+ * Zod schema for a recipe. Defines the structure of a recipe, including queries
+ * and output schema.
+ */
+export const recipeSchema = z.object({
   // Min length 3
   // Max length 50
   // Only alphanumeric characters and hyphens
@@ -46,7 +58,7 @@ const recipe = z.object({
   // Keyword min length 3
   // Keyword max length 50
   keywords: z.array(z.string().min(3).max(50)).optional(),
-  queries: z.array(query),
+  queries: z.array(querySchema),
   schema: z.string(),
   resolver: z.string(),
   revokable: z.boolean(),
@@ -55,7 +67,7 @@ const recipe = z.object({
 /**
  * Defines the structure of a recipe, including queries and output schema.
  */
-export type Recipe = z.infer<typeof recipe>;
+export type Recipe = z.infer<typeof recipeSchema>;
 
 // Define the basic schema value types
 const schemaValueBase = z.union([
@@ -83,7 +95,7 @@ const SchemaItem = z.object({
 });
 
 export function parseRecipe(input: unknown): Recipe {
-  return recipe.parse(input);
+  return recipeSchema.parse(input);
 }
 
 function substitutePlaceholders(variables: QueryVariables): QueryVariables {
