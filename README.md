@@ -4,9 +4,6 @@ This SDK simplifies the development of C–ATTS recipes. It provides a set of fu
 
 When developing recipes, most likey you will want to use the pre-packaged `catts` CLI tool instead of this SDK. The tool fetches query results, runs processor scripts, and validates schema items against the recipe's schema. You can find the CLI tool here: [catts-cli](https://github.com/c-atts/catts-cli).
 
-> [!NOTE]
-> The SDK is a work in progress. Features and functionality may change without notice. C–ATTS has not yet been publicly released, so the SDK is not yet ready for general use.
-
 For some examples of recipes, see the [catts-recipes](https://github.com/c-atts/catts-recipes) repository.
 
 ## What is C–ATTS?
