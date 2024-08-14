@@ -5,6 +5,10 @@ import {
 import { solidityPackedKeccak256 } from "ethers";
 import { z } from "zod";
 
+// SDK requests are proxied through the cloudflare caching worker to ensure
+// consistent results with the smart contract canister
+const CATTS_GQL_PROXY_URL = "https://catts-gql-proxy.kristofer-977.workers.dev";
+
 /**
  * Zod schema for query variables. Defines the shape of query variables to be used
  * in GraphQL queries.
@@ -188,27 +192,53 @@ function substitutePlaceholders(variables: QueryVariables): QueryVariables {
   return replacePlaceholders(variables);
 }
 
+type FetchQueryOptions = {
+  cacheKey?: string;
+  verbose?: boolean;
+};
+
 /**
  * Fetches the result of a query from the GraphQl endpoint specified in the query.
  *
  * @returns The result of the query in JSON format.
  */
-export async function fetchQuery(query: Query) {
-  try {
-    const variables = substitutePlaceholders(query.variables);
 
-    const response = await fetch(query.endpoint, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ query: query.query, variables }),
-    });
+export async function fetchQuery(
+  query: Query,
+  fetchQueryOptions?: FetchQueryOptions
+) {
+  const variables = substitutePlaceholders(query.variables);
 
-    return response.json();
-  } catch (error) {
-    return error;
+  const cacheKey =
+    fetchQueryOptions?.cacheKey || Math.random().toString(36).substring(2, 15);
+
+  const url = `${CATTS_GQL_PROXY_URL}/${cacheKey}`;
+
+  const options = {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "x-gql-query-url": query.endpoint,
+    },
+    body: JSON.stringify({ query: query.query, variables }),
+  };
+
+  if (fetchQueryOptions?.verbose) {
+    console.log("Fetching query from:", url);
+    console.log("Options:", options);
   }
+
+  const response = await fetch(url, options);
+
+  if (fetchQueryOptions?.verbose) {
+    console.log("Response status:", response.status);
+  }
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch query from ${query.endpoint}`);
+  }
+
+  return response.json();
 }
 
 /**
