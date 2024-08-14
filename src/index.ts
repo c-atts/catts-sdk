@@ -166,9 +166,16 @@ export function parseRecipe(input: unknown): Recipe {
   return recipeSchema.parse(input);
 }
 
-function substitutePlaceholders(variables: QueryVariables): QueryVariables {
+function substitutePlaceholders(
+  fetchQueryOptions: FetchQueryOptions
+): QueryVariables {
   const placeholders: { [key: string]: string } = {
-    "{user_eth_address}": process.env.USER_ETH_ADDRESS || "",
+    "{user_eth_address}":
+      fetchQueryOptions.placeHolderValues?.userEthAddress ||
+      "0x0000000000000000000000000000000000000000",
+    "{user_eth_address_lowercase}":
+      fetchQueryOptions.placeHolderValues?.userEthAddress?.toLowerCase() ||
+      "0x0000000000000000000000000000000000000000",
   };
 
   function replacePlaceholders(obj: QueryVariables): QueryVariables {
@@ -189,11 +196,15 @@ function substitutePlaceholders(variables: QueryVariables): QueryVariables {
     }, {});
   }
 
-  return replacePlaceholders(variables);
+  return replacePlaceholders(fetchQueryOptions.query.variables);
 }
 
 type FetchQueryOptions = {
+  query: Query;
   cacheKey?: string;
+  placeHolderValues?: {
+    userEthAddress?: string;
+  };
   verbose?: boolean;
 };
 
@@ -203,11 +214,8 @@ type FetchQueryOptions = {
  * @returns The result of the query in JSON format.
  */
 
-export async function fetchQuery(
-  query: Query,
-  fetchQueryOptions?: FetchQueryOptions
-) {
-  const variables = substitutePlaceholders(query.variables);
+export async function fetchQuery(fetchQueryOptions: FetchQueryOptions) {
+  const variables = substitutePlaceholders(fetchQueryOptions);
 
   const cacheKey =
     fetchQueryOptions?.cacheKey || Math.random().toString(36).substring(2, 15);
@@ -218,9 +226,9 @@ export async function fetchQuery(
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "x-gql-query-url": query.endpoint,
+      "x-gql-query-url": fetchQueryOptions.query.endpoint,
     },
-    body: JSON.stringify({ query: query.query, variables }),
+    body: JSON.stringify({ query: fetchQueryOptions.query.query, variables }),
   };
 
   if (fetchQueryOptions?.verbose) {
@@ -235,7 +243,9 @@ export async function fetchQuery(
   }
 
   if (!response.ok) {
-    throw new Error(`Failed to fetch query from ${query.endpoint}`);
+    throw new Error(
+      `Failed to fetch query from ${fetchQueryOptions.query.endpoint}`
+    );
   }
 
   return response.json();
