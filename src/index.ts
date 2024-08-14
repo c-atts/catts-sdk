@@ -10,7 +10,7 @@ import { z } from "zod";
  * in GraphQL queries.
  */
 export const queryVariablesSchema: z.ZodTypeAny = z.lazy(() =>
-  z.record(z.union([queryVariablesSchema, z.string(), z.number()])),
+  z.record(z.union([queryVariablesSchema, z.string(), z.number()]))
 );
 
 /**
@@ -18,15 +18,41 @@ export const queryVariablesSchema: z.ZodTypeAny = z.lazy(() =>
  */
 export type QueryVariables = z.infer<typeof queryVariablesSchema>;
 
+// Custom validation function for the name
+const validateRecipeName = (val: string) => {
+  if (val.startsWith("-") || val.endsWith("-")) {
+    return false;
+  }
+  if (/^\d/.test(val)) {
+    return false;
+  }
+  return /^[a-z0-9-]+$/.test(val);
+};
+
+// Custom validation function for keywords
+const validateKeyword = (keyword: string) => {
+  return /^[a-z0-9-]+$/.test(keyword);
+};
+
 /**
  * Zod schema for query variables. Defines the components of a GraphQL query,
  * including endpoint and variables.
  */
-export const querySchema = z.object({
-  endpoint: z.string(),
-  query: z.string(),
-  variables: z.record(z.unknown()),
-});
+export const querySchema = z
+  .object({
+    endpoint: z
+      .string()
+      .min(1, { message: "Endpoint must be at least 1 character long" })
+      .max(255, { message: "Endpoint must be at most 255 characters long" }),
+
+    query: z
+      .string()
+      .min(1, { message: "Query must be at least 1 character long" })
+      .max(1024, { message: "Query must be at most 1024 characters long" }),
+
+    variables: z.record(z.unknown()),
+  })
+  .strict();
 
 /**
  * Defines the components of a GraphQL query, including endpoint and variables.
@@ -37,32 +63,68 @@ export type Query = z.infer<typeof querySchema>;
  * Zod schema for a recipe. Defines the structure of a recipe, including queries
  * and output schema.
  */
-export const recipeSchema = z.object({
-  // Min length 3
-  // Max length 50
-  // Only alphanumeric characters and hyphens
-  // Lowercase
-  name: z
-    .string()
-    .min(3)
-    .max(50)
-    .refine((val) => /^[a-z0-9-]+$/.test(val), {
-      message: "Name can only contain alphanumeric characters and hyphens",
+export const recipeSchema = z
+  .object({
+    // Name validation
+    name: z
+      .string()
+      .min(3, { message: "Name must be at least 3 characters long" })
+      .max(50, { message: "Name must be at most 50 characters long" })
+      .refine((val) => validateRecipeName(val), {
+        message:
+          "Name must be lowercase, alphanumeric, may contain hyphens, must not start or end with a hyphen, and must not start with a digit",
+      }),
+
+    // Description validation
+    description: z
+      .string()
+      .min(3, { message: "Description must be at least 3 characters long" })
+      .max(160, { message: "Description must be at most 160 characters long" })
+      .optional(),
+
+    // Keywords validation
+    keywords: z
+      .array(
+        z
+          .string()
+          .min(3, {
+            message: "Each keyword must be at least 3 characters long",
+          })
+          .max(50, {
+            message: "Each keyword must be at most 50 characters long",
+          })
+          .refine((keyword) => validateKeyword(keyword), {
+            message:
+              "Each keyword must be lowercase, alphanumeric, and may contain hyphens",
+          })
+      )
+      .optional()
+      .refine((keywords) => keywords && keywords.length > 0, {
+        message: "Keywords must not be empty",
+        path: ["keywords"], // Specify the path for the error message
+      }),
+
+    // Queries validation
+    queries: z.array(querySchema),
+
+    // Schema validation (length constraints)
+    schema: z
+      .string()
+      .min(1, { message: "Schema must be at least 1 character long" })
+      .max(512, { message: "Schema must be at most 512 characters long" }),
+
+    // Resolver validation (length constraint, exactly 42 characters)
+    resolver: z
+      .string()
+      .length(42, { message: "Resolver must be exactly 42 characters long" }),
+
+    // Revokable validation
+    revokable: z.boolean().refine((val) => val === false, {
+      message:
+        "'revokable' should be false, revokable attestations are not yet supported",
     }),
-  // Min length 3
-  // Max length 50
-  displayName: z.string().min(3).max(50).optional(),
-  // Min length 3
-  // Max length 160
-  description: z.string().min(3).max(160).optional(),
-  // Keyword min length 3
-  // Keyword max length 50
-  keywords: z.array(z.string().min(3).max(50)).optional(),
-  queries: z.array(querySchema),
-  schema: z.string(),
-  resolver: z.string(),
-  revokable: z.boolean(),
-});
+  })
+  .strict();
 
 /**
  * Defines the structure of a recipe, including queries and output schema.
@@ -88,11 +150,13 @@ const schemaValueComplex = z.union([
 const SchemaValue = z.union([schemaValueBase, schemaValueComplex]);
 
 // Define the SchemaItem schema
-const SchemaItem = z.object({
-  name: z.string(),
-  type: z.string(),
-  value: SchemaValue,
-});
+const SchemaItem = z
+  .object({
+    name: z.string(),
+    type: z.string(),
+    value: SchemaValue,
+  })
+  .strict();
 
 export function parseRecipe(input: unknown): Recipe {
   return recipeSchema.parse(input);
@@ -110,7 +174,7 @@ function substitutePlaceholders(variables: QueryVariables): QueryVariables {
           (str, [placeholder, actualValue]) => {
             return str.replace(new RegExp(placeholder, "g"), actualValue);
           },
-          value,
+          value
         );
       } else if (typeof value === "object" && value !== null) {
         acc[key] = replacePlaceholders(value);
@@ -211,6 +275,6 @@ export function getSchemaUid({
 }) {
   return solidityPackedKeccak256(
     ["string", "address", "bool"],
-    [schema, resolver, revokable],
+    [schema, resolver, revokable]
   );
 }
