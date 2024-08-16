@@ -38,6 +38,13 @@ const validateKeyword = (keyword: string) => {
   return /^[a-z0-9-]+$/.test(keyword);
 };
 
+const toString = z.preprocess((input) => {
+  if (typeof input === "object") {
+    return JSON.stringify(input);
+  }
+  throw new Error("Expected 'variables' to be an object");
+}, z.string());
+
 /**
  * Zod schema for query variables. Defines the components of a GraphQL query,
  * including endpoint and variables.
@@ -54,7 +61,7 @@ export const querySchema = z
       .min(1, { message: "Query must be at least 1 character long" })
       .max(1024, { message: "Query must be at most 1024 characters long" }),
 
-    variables: z.record(z.unknown()),
+    variables: toString,
   })
   .strict();
 
@@ -178,25 +185,12 @@ function substitutePlaceholders(
       "0x0000000000000000000000000000000000000000",
   };
 
-  function replacePlaceholders(obj: QueryVariables): QueryVariables {
-    return Object.entries(obj).reduce<QueryVariables>((acc, [key, value]) => {
-      if (typeof value === "string") {
-        acc[key] = Object.entries(placeholders).reduce(
-          (str, [placeholder, actualValue]) => {
-            return str.replace(new RegExp(placeholder, "g"), actualValue);
-          },
-          value
-        );
-      } else if (typeof value === "object" && value !== null) {
-        acc[key] = replacePlaceholders(value);
-      } else {
-        acc[key] = value;
-      }
-      return acc;
-    }, {});
+  let variables = fetchQueryOptions.query.variables;
+  for (const [key, value] of Object.entries(placeholders)) {
+    variables = variables.split(key).join(value);
   }
 
-  return replacePlaceholders(fetchQueryOptions.query.variables);
+  return variables;
 }
 
 type FetchQueryOptions = {
