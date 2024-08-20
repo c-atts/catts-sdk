@@ -223,8 +223,19 @@ function substitutePlaceholders(args: FetchQueryArgs): Query {
     };
   }
 
+  if (args.query.headers) {
+    let headers = JSON.stringify(args.query.headers);
+    for (const [key, value] of Object.entries(placeholders)) {
+      headers = headers.split(key).join(value);
+    }
+    query = {
+      ...query,
+      headers: JSON.parse(headers),
+    };
+  }
+
   if (args.query.body?.variables) {
-    let variables = args.query.body.variables;
+    let variables = JSON.stringify(args.query.body.variables);
     for (const [key, value] of Object.entries(placeholders)) {
       variables = variables.split(key).join(value);
     }
@@ -232,7 +243,7 @@ function substitutePlaceholders(args: FetchQueryArgs): Query {
       ...query,
       body: {
         ...args.query.body,
-        variables,
+        variables: JSON.parse(variables),
       },
     };
   }
