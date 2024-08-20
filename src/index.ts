@@ -7,7 +7,7 @@ import { z } from "zod";
 
 // SDK requests are proxied through the cloudflare caching worker to ensure
 // consistent results with the smart contract canister
-const CATTS_GQL_PROXY_URL = "https://catts-gql-proxy.kristofer-977.workers.dev";
+const CATTS_GQL_PROXY_URL = "https://query.catts.run";
 
 /**
  * Zod schema for query variables. Defines the shape of query variables to be used
