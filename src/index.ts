@@ -56,9 +56,9 @@ export const querySchema = z
       .min(1, { message: "Endpoint must be at least 1 character long" })
       .max(255, { message: "Endpoint must be at most 255 characters long" }),
 
-    filter: z.string().optional(),
+    filter: z.string().optional().nullable(),
 
-    headers: z.any().optional(),
+    headers: z.any().optional().nullable(),
 
     body: z
       .object({
@@ -69,7 +69,8 @@ export const querySchema = z
 
         variables: z.any(),
       })
-      .optional(),
+      .optional()
+      .nullable(),
   })
   .strict();
 
@@ -267,9 +268,6 @@ export async function fetchQuery(args: FetchQueryArgs) {
 
   const options = {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
     body: JSON.stringify(query),
   };
 
